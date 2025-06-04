@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantra Counter (108 beads)</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --container-bg: white;
+            --bead-color: #ddd;
+            --active-bead: #8bc34a;
+            --guru-bead: #ff9800;
+            --active-guru: #ff5722;
+            --button-bg: #f44336;
+            --button-hover: #d32f2f;
+        }
+
+        .dark-theme {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --container-bg: #2d2d2d;
+            --bead-color: #555;
+            --active-bead: #689f38;
+            --guru-bead: #e65100;
+            --active-guru: #bf360c;
+            --button-bg: #c62828;
+            --button-hover: #8e0000;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
+        }
+        
+        h1 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+        
+        .counter {
+            font-size: 3rem;
+            margin: 20px 0;
+            color: var(--text-color);
+        }
+        
+        .rounds {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+        
+        .instructions {
+            margin: 20px 0;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        
+        .mala {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin: 30px auto;
+            max-width: 600px;
+        }
+        
+        .bead {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--bead-color);
+            transition: background-color 0.3s;
+        }
+        
+        .bead.active {
+            background-color: var(--active-bead);
+        }
+        
+        .bead.guru {
+            background-color: var(--guru-bead);
+        }
+        
+        .bead.guru.active {
+            background-color: var(--active-guru);
+        }
+        
+        .reset-btn {
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background-color: var(--button-hover);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .theme-btn, .lang-btn {
+            background-color: #607d8b;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+
+        .theme-btn:hover, .lang-btn:hover {
+            background-color: #455a64;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <button class="theme-btn" id="themeBtn">Тёмная тема</button>
+            <button class="lang-btn" id="langBtn">English</button>
+        </div>
+        
+        <h1 id="title">Счётчик мантры</h1>
+        <div class="counter" id="counter">0</div>
+        <div class="rounds" id="rounds">Кругов: 0</div>
+        <div class="instructions" id="instructions">
+            Нажимайте пробел или кликайте мышкой для счёта<br>
+            Каждая бусина = 1 мантра, всего 108 бусин
+        </div>
+        
+        <div class="mala" id="mala"></div>
+        
+        <button class="reset-btn" id="resetBtn">Сбросить</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы интерфейса
+            const counterElement = document.getElementById('counter');
+            const roundsElement = document.getElementById('rounds');
+            const malaElement = document.getElementById('mala');
+            const resetBtn = document.getElementById('resetBtn');
+            const themeBtn = document.getElementById('themeBtn');
+            const langBtn = document.getElementById('langBtn');
+            const titleElement = document.getElementById('title');
+            const instructionsElement = document.getElementById('instructions');
+            
+            // Состояние приложения
+            let count = 0;
+            let rounds = 0;
+            let darkTheme = false;
+            let englishLang = false;
+            
+            // Локализация
+            const translations = {
+                title: {
+                    ru: "Счётчик мантры",
+                    en: "Mantra Counter"
+                },
+                rounds: {
+                    ru: "Кругов",
+                    en: "Rounds"
+                },
+                instructions: {
+                    ru: "Нажимайте пробел или кликайте мышкой для счёта<br>Каждая бусина = 1 мантра, всего 108 бусин",
+                    en: "Press space or click to count<br>Each bead = 1 mantra, 108 beads total"
+                },
+                resetBtn: {
+                    ru: "Сбросить",
+                    en: "Reset"
+                },
+                themeBtn: {
+                    light: {
+                        ru: "Тёмная тема",
+                        en: "Dark theme"
+                    },
+                    dark: {
+                        ru: "Светлая тема",
+                        en: "Light theme"
+                    }
+                },
+                langBtn: {
+                    ru: "English",
+                    en: "Русский"
+                }
+            };
+            
+            // Инициализация чёток
+            function createMala() {
+                malaElement.innerHTML = '';
+                
+                for (let i = 0; i < 108; i++) {
+                    const bead = document.createElement('div');
+                    bead.className = 'bead';
+                    bead.dataset.index = i;
+                    malaElement.appendChild(bead);
+                }
+                
+                // Гуру-бусина
+                const guruBead = document.createElement('div');
+                guruBead.className = 'bead guru';
+                malaElement.appendChild(guruBead);
+            }
+            
+            // Обновление чёток
+            function updateMala() {
+                const beads = document.querySelectorAll('.bead');
+                
+                beads.forEach((bead, index) => {
+                    if (index < count % 108) {
+                        bead.classList.add('active');
+                    } else {
+                        bead.classList.remove('active');
+                    }
+                });
+                
+                // Подсветка гуру-бусины при завершении круга
+                if (count % 108 === 0 && count > 0) {
+                    beads[108].classList.add('active');
+                } else {
+                    beads[108].classList.remove('active');
+                }
+            }
+            
+            // Обновление интерфейса
+            function updateUI() {
+                counterElement.textContent = count % 108 || (count > 0 ? 108 : 0);
+                roundsElement.textContent = `${translations.rounds[englishLang ? 'en' : 'ru']}: ${rounds}`;
+                updateMala();
+                
+                // Обновление текстов
+                titleElement.textContent = translations.title[englishLang ? 'en' : 'ru'];
+                instructionsElement.innerHTML = translations.instructions[englishLang ? 'en' : 'ru'];
+                resetBtn.textContent = translations.resetBtn[englishLang ? 'en' : 'ru'];
+                langBtn.textContent = translations.langBtn[englishLang ? 'en' : 'ru'];
+                themeBtn.textContent = darkTheme ? 
+                    translations.themeBtn.dark[englishLang ? 'en' : 'ru'] : 
+                    translations.themeBtn.light[englishLang ? 'en' : 'ru'];
+            }
+            
+            // Увеличение счётчика
+            function incrementCounter() {
+                count++;
+                
+                if (count % 108 === 0) {
+                    rounds++;
+                }
+                
+                updateUI();
+            }
+            
+            // Сброс счётчика
+            function resetCounter() {
+                count = 0;
+                rounds = 0;
+                updateUI();
+            }
+            
+            // Переключение темы
+            function toggleTheme(e) {
+                e.stopPropagation(); // Предотвращаем всплытие события
+                darkTheme = !darkTheme;
+                if (darkTheme) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+                updateUI();
+            }
+            
+            // Переключение языка
+            function toggleLanguage(e) {
+                e.stopPropagation(); // Предотвращаем всплытие события
+                englishLang = !englishLang;
+                updateUI();
+            }
+            
+            // Инициализация
+            createMala();
+            updateUI();
+            
+            // Обработчики событий
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    incrementCounter();
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                // Увеличиваем счётчик только если клик не по кнопкам управления
+                if (!e.target.closest('.controls')) {
+                    incrementCounter();
+                }
+            });
+            
+            resetBtn.addEventListener('click', resetCounter);
+            themeBtn.addEventListener('click', toggleTheme);
+            langBtn.addEventListener('click', toggleLanguage);
+        });
+    </script>
+</body>
+</html>
