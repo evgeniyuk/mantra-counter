@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mantra Counter (108 beads)</title>
+    <title>Счётчик мантры (108 бусин)</title>
     <style>
         :root {
             --bg-color: #f5f5f5;
@@ -139,9 +139,22 @@
         .theme-btn:hover, .lang-btn:hover {
             background-color: #455a64;
         }
+
+        .sound-control {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
     </style>
 </head>
 <body>
+    <button class="sound-control" id="soundControl">🔊</button>
+    
     <div class="container">
         <div class="controls">
             <button class="theme-btn" id="themeBtn">Тёмная тема</button>
@@ -161,6 +174,12 @@
         <button class="reset-btn" id="resetBtn">Сбросить</button>
     </div>
 
+    <!-- Аудио элемент с альтернативным источником звука -->
+    <audio id="bellSound" preload="auto">
+        <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+        Ваш браузер не поддерживает аудио элемент.
+    </audio>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы интерфейса
@@ -172,12 +191,15 @@
             const langBtn = document.getElementById('langBtn');
             const titleElement = document.getElementById('title');
             const instructionsElement = document.getElementById('instructions');
+            const bellSound = document.getElementById('bellSound');
+            const soundControl = document.getElementById('soundControl');
             
             // Состояние приложения
             let count = 0;
             let rounds = 0;
             let darkTheme = false;
             let englishLang = false;
+            let soundEnabled = true;
             
             // Локализация
             const translations = {
@@ -210,6 +232,14 @@
                 langBtn: {
                     ru: "English",
                     en: "Русский"
+                },
+                soundOn: {
+                    ru: "🔊 Звук вкл",
+                    en: "🔊 Sound on"
+                },
+                soundOff: {
+                    ru: "🔇 Звук выкл",
+                    en: "🔇 Sound off"
                 }
             };
             
@@ -250,6 +280,14 @@
                 }
             }
             
+            // Воспроизведение звука
+            function playBellSound() {
+                if (!soundEnabled) return;
+                
+                bellSound.currentTime = 0;
+                bellSound.play().catch(e => console.log("Ошибка воспроизведения звука:", e));
+            }
+            
             // Обновление интерфейса
             function updateUI() {
                 counterElement.textContent = count % 108 || (count > 0 ? 108 : 0);
@@ -264,22 +302,33 @@
                 themeBtn.textContent = darkTheme ? 
                     translations.themeBtn.dark[englishLang ? 'en' : 'ru'] : 
                     translations.themeBtn.light[englishLang ? 'en' : 'ru'];
+                soundControl.textContent = soundEnabled ? 
+                    translations.soundOn[englishLang ? 'en' : 'ru'] : 
+                    translations.soundOff[englishLang ? 'en' : 'ru'];
             }
             
             // Увеличение счётчика
             function incrementCounter() {
                 count++;
                 
+                // Проверяем завершение круга (108 мантр)
                 if (count % 108 === 0) {
                     rounds++;
+                    playBellSound();
+                    
+                    // Визуальный эффект
+                    document.body.style.backgroundColor = darkTheme ? '#2e7d32' : '#e8f5e9';
+                    setTimeout(() => {
+                        document.body.style.backgroundColor = '';
+                    }, 500);
                 }
                 
                 updateUI();
             }
             
             // Сброс счётчика
-            function resetCounter() {
-              //  e.stopPropagation(); // Предотвращаем всплытие события
+            function resetCounter(e) {
+                e.stopPropagation();
                 count = 0;
                 rounds = 0;
                 updateUI();
@@ -287,7 +336,7 @@
             
             // Переключение темы
             function toggleTheme(e) {
-                e.stopPropagation(); // Предотвращаем всплытие события
+                e.stopPropagation();
                 darkTheme = !darkTheme;
                 if (darkTheme) {
                     document.body.classList.add('dark-theme');
@@ -299,14 +348,30 @@
             
             // Переключение языка
             function toggleLanguage(e) {
-                e.stopPropagation(); // Предотвращаем всплытие события
+                e.stopPropagation();
                 englishLang = !englishLang;
+                updateUI();
+            }
+            
+            // Переключение звука
+            function toggleSound(e) {
+                e.stopPropagation();
+                soundEnabled = !soundEnabled;
                 updateUI();
             }
             
             // Инициализация
             createMala();
             updateUI();
+            
+            // Разблокировка аудио (для мобильных устройств)
+            function unlockAudio() {
+                bellSound.volume = 0.3;
+                bellSound.play().then(() => {
+                    bellSound.pause();
+                    bellSound.currentTime = 0;
+                }).catch(e => {});
+            }
             
             // Обработчики событий
             document.addEventListener('keydown', function(e) {
@@ -317,8 +382,9 @@
             });
             
             document.addEventListener('click', function(e) {
-                // Увеличиваем счётчик только если клик не по кнопкам управления
-                if (!e.target.closest('.controls')) {
+                if (!e.target.closest('.controls') && 
+                    e.target.id !== 'resetBtn' && 
+                    e.target.id !== 'soundControl') {
                     incrementCounter();
                 }
             });
@@ -326,6 +392,10 @@
             resetBtn.addEventListener('click', resetCounter);
             themeBtn.addEventListener('click', toggleTheme);
             langBtn.addEventListener('click', toggleLanguage);
+            soundControl.addEventListener('click', toggleSound);
+            
+            // Разблокируем аудио при первом клике
+            document.addEventListener('click', unlockAudio, { once: true });
         });
     </script>
 </body>
